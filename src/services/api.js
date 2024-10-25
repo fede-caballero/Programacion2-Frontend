@@ -18,12 +18,54 @@ export const fetchProducts = async () => {
   }
 };
 
+export const fetchProductsByShop = async (shopId) => {
+  try {
+    console.log('Fetching products for shop:', shopId);
+    const response = await axios.get(`${API_URL}/api/products/shop/${shopId}`);
+    console.log('Products received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products by shop:', error);
+    throw error;
+  }
+};
+
+/*
 export const createProduct = async (productData) => {
   try {
     const response = await axios.post(`${API_URL}/api/products`, productData);
     return response.data;
   } catch (error) {
     console.error('Error creating product:', error);
+    throw error;
+  }
+};*/
+
+// Nueva createProduct
+export const createProduct = async (productData) => {
+  try {
+    const formattedData = {
+      productName: productData.productName,
+      description: productData.description,
+      price: productData.price,
+      location: productData.location,
+      shop: {
+        id: productData.shop.shopId // Usamos directamente shopId sin intentar parsearlo
+      }
+    };
+
+    console.log('Sending product data:', formattedData);
+    
+    const response = await axios.post(`${API_URL}/api/products`, formattedData);
+    console.log('Server response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating product details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      data: error.response?.data
+    });
     throw error;
   }
 };
