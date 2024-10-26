@@ -16,10 +16,32 @@ import ShoppingListScreen from '../screens/ShoppingListScreen';
 import UserScreen from '../screens/UserScreen';
 import ShoppingListItemForm from '../components/ShoppingList/ShoppingListForm';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import AddShoppingList from '../screens/AddShoppingList';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const RootStack = createStackNavigator();
+const ListStack = createStackNavigator();
+
+const ShoppingListStack = () => (
+  <ListStack.Navigator>
+    <ListStack.Screen 
+      name="ShoppingLists" 
+      component={ShoppingListScreen} 
+      options={{ headerShown: false }}
+    />
+    <ListStack.Screen 
+      name="AddShoppingList" 
+      component={AddShoppingList}
+      options={{ title: 'Nueva Lista de Compras' }}
+    />
+    <ListStack.Screen 
+      name="AddToList" 
+      component={ShoppingListItemForm}
+      options={{ title: 'Agregar Producto' }}
+    />
+  </ListStack.Navigator>
+);
 
 const ProfileStack = () => (
   <Stack.Navigator>
@@ -29,10 +51,10 @@ const ProfileStack = () => (
 );
 
 const AuthStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false}}>
-    <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Welcome" component={WelcomeScreen} />
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="Register" component={RegisterScreen} />
   </Stack.Navigator>
 );
 
@@ -63,16 +85,8 @@ const BuyerTabs = () => (
     <Tab.Screen name="Home" component={HomeScreen} />
     <Tab.Screen name="Products" component={ProductScreen} />
     <Tab.Screen name="Shops" component={ShopScreen} />
-    <Tab.Screen name="Lists" component={ShoppingListScreen} />
-    <Tab.Screen name="Profile" component={ProfileStack} options={{ title: 'Perfil' }} />
-    <Tab.Screen 
-    name="Add to List" 
-    component={ShoppingListItemForm} 
-    options={{ 
-      tabBarButton: () => null,
-      tabBarStyle: { display: 'none' } 
-      }} 
-      />
+    <Tab.Screen name="Lists" component={ShoppingListStack} />
+    <Tab.Screen name="Profile" component={ProfileStack} />
   </Tab.Navigator>
 );
 
@@ -80,7 +94,7 @@ const CommerceTabs = () => (
   <Tab.Navigator screenOptions={tabScreenOptions}>
     <Tab.Screen name="Home" component={HomeScreen} />
     <Tab.Screen name="Products" component={ProductScreen} />
-    <Tab.Screen name="Profile" component={ProfileStack} options={{ title: 'Perfil' }} />
+    <Tab.Screen name="Profile" component={ProfileStack} />
   </Tab.Navigator>
 );
 
@@ -88,7 +102,6 @@ const AppContent = () => {
   const { isAuthenticated, userRole, loading } = React.useContext(AuthContext);
 
   if (loading) {
-    // Aquí podrías mostrar un componente de loading
     return null;
   }
 
@@ -113,35 +126,6 @@ const AppNavigator = () => {
         <AppContent />
       </AuthProvider>
     </NavigationContainer>
-  );
-};
-
-
-/*
-const AppNavigator = () => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Root" component={AppContent} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
-};*/
-
-/*
-const AppContent = ({ navigation }) => (
-    <AuthProvider navigation={navigation}>
-      <AuthConsumer />
-    </AuthProvider>
-);*/
-
-const AuthConsumer = () => {
-  const { isAuthenticated, userRole } = React.useContext(AuthContext);
-
-  return isAuthenticated ? (
-    userRole === 'BUYER' ? <BuyerTabs /> : <CommerceTabs />
-  ) : (
-    <AuthStack />
   );
 };
 

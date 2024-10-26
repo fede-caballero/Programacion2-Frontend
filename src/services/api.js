@@ -45,6 +45,7 @@ export const createProduct = async (productData) => {
 export const createProduct = async (productData) => {
   try {
     const formattedData = {
+      category: productData.category,
       productName: productData.productName,
       description: productData.description,
       price: productData.price,
@@ -52,6 +53,7 @@ export const createProduct = async (productData) => {
       shop: {
         id: productData.shop.shopId // Usamos directamente shopId sin intentar parsearlo
       }
+      
     };
 
     console.log('Sending product data:', formattedData);
@@ -102,24 +104,68 @@ export const fetchShops = async () => {
   }
 };
 
-export const fetchShoppingLists = async (userId) => {
+export const fetchShoppingLists = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/users/${userId}/shopping-lists`);
+    const userData = await AsyncStorage.getItem('userData');
+    if (!userData) {
+      throw new Error('No user data found');
+    }
+    
+    const { userId } = JSON.parse(userData);
+    if (!userId) {
+      throw new Error('No user ID found');
+    }
+
+    console.log('Fetching shopping lists for user:', userId);
+    const response = await api.get(`/api/users/${userId}/shopping-lists`);
+    console.log('Shopping lists response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error fetching shopping lists:', error);
-    throw error;
+    console.error('Error fetching shopping lists:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    return [];
   }
 };
 
 
-
-export const createShoppingList = async (shoppingListData) => {
+export const createShoppingList = async (listData) => {
   try {
-    const response = await axios.post(`${API_URL}/api/shopping-lists`, shoppingListData);
+    const userData = await AsyncStorage.getItem('userData');
+    if (!userData) {
+      throw new Error('No user data found');
+    }
+    
+    const { userId } = JSON.parse(userData);
+    if (!userId) {
+      throw new Error('No user ID found');
+    }
+
+    const shoppingListData = {
+      listName: listData.listName,
+      description: listData.description
+    };
+
+    console.log('Creating shopping list:', {
+      userId,
+      listData: shoppingListData
+    });
+
+    const response = await api.post(
+      `/api/users/${userId}/shopping-lists`,
+      shoppingListData
+    );
+
+    console.log('Shopping list created:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error creating shopping list:', error);
+    console.error('Error creating shopping list:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 };
@@ -246,10 +292,24 @@ export const updateShoppingListItem = async (shoppingListId, itemId, updatedData
 
 export const getShoppingListDetails = async (shoppingListId) => {
   try {
-    const response = await axios.get(`${API_URL}/api/shopping-lists/${shoppingListId}`);
+    const userData = await AsyncStorage.getItem('userData');
+    if (!userData) {
+      throw new Error('No user data found');
+    }
+    
+    const { userId } = JSON.parse(userData);
+    if (!userId) {
+      throw new Error('No user ID found');
+    }
+
+    const response = await api.get(`/api/users/${userId}/shopping-lists/${shoppingListId}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching shopping list details:', error);
+    console.error('Error fetching shopping list details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 };

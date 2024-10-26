@@ -24,7 +24,6 @@ const ProductScreen = () => {
           const parsedUser = JSON.parse(userData);
           console.log('Parsed user data:', parsedUser);
           
-          // Verifica si el usuario es tipo COMMERCE y tiene shopId
           if (parsedUser.role === 'COMMERCE' && parsedUser.shop) {
             setShopData({
               shopId: parsedUser.shop.shopId,
@@ -45,8 +44,8 @@ const ProductScreen = () => {
     getShopData();
   }, []);
 
-  const toggleModal = () => {
-    setModalVisible(!isModalVisible);
+  const handleCloseModal = () => {
+    setModalVisible(false);
   };
 
   const ListHeader = () => (
@@ -104,13 +103,13 @@ const ProductScreen = () => {
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
         color={theme.colors.surface}
-        onPress={toggleModal}
+        onPress={() => setModalVisible(true)}
       />
       
       <Portal>
         <Modal
           visible={isModalVisible}
-          onDismiss={toggleModal}
+          onDismiss={handleCloseModal}
           contentContainerStyle={styles.modalContainer}
         >
           <Card style={styles.modalCard}>
@@ -127,7 +126,7 @@ const ProductScreen = () => {
                 </Text>
               </View>
               <AddProductForm 
-                closeModal={toggleModal} 
+                closeModal={handleCloseModal}
                 shopId={shopData.shopId}
                 shopLocation={shopData.shopLocation}
               />
