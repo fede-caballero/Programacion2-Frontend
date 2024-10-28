@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
-import { Card, Title, Paragraph, ActivityIndicator, Text, Button, useTheme } from 'react-native-paper';
+import { Card, Title, Paragraph, ActivityIndicator, Text, Button, useTheme, IconButton } from 'react-native-paper';
 import { fetchProductsByShop } from '../../services/api';
-import { useProductRefresh } from './ProductContext';
+import { useProductRefresh, useProduct } from './ProductContext';
+import { ProductCard } from './ProductCard';
 
 const ProductList = ({ ListHeaderComponent, contentContainerStyle, shopId }) => {
   const [products, setProducts] = useState([]);
@@ -10,7 +11,12 @@ const ProductList = ({ ListHeaderComponent, contentContainerStyle, shopId }) => 
   const [error, setError] = useState(null);
   const theme = useTheme();
   const { shouldRefresh } = useProductRefresh();
-
+  const { 
+    setSelectedProduct, 
+    setIsEditModalVisible, 
+    setIsDeleteModalVisible 
+  } = useProduct();
+  
 
   const loadProducts = async () => {
     try {
@@ -35,7 +41,16 @@ const ProductList = ({ ListHeaderComponent, contentContainerStyle, shopId }) => 
     }
   };
 
-  // Recargar productos cuando cambie el shopId o cuando el componente se monte
+  const handleEdit = (item) => {
+    setSelectedProduct(item);
+    setIsEditModalVisible(true);
+  };
+
+  const handleDelete = (item) => {
+    setSelectedProduct(item);
+    setIsDeleteModalVisible(true);
+  };
+
   useEffect(() => {
     if (shopId) {
       console.log('Loading products for shop:', shopId);
@@ -46,13 +61,39 @@ const ProductList = ({ ListHeaderComponent, contentContainerStyle, shopId }) => 
   const renderItem = ({ item }) => (
     <Card style={styles.card}>
       <Card.Content>
-        <Title>{item.productName}</Title>
-        <Paragraph>{item.description}</Paragraph>
-        <Paragraph>Precio: ${item.price?.toFixed(2)}</Paragraph>
-        <Text style={styles.location}>{item.location}</Text>
+        <View style={styles.cardHeader}>
+          <Title style={styles.title}>{item.productName}</Title>
+          <View style={styles.actionButtons}>
+            <IconButton
+              icon="pencil"
+              size={20}
+              iconColor={theme.colors.primary}
+              onPress={() => handleEdit(item)}
+            />
+            <IconButton
+              icon="delete"
+              size={20}
+              iconColor={theme.colors.error}
+              onPress={() => handleDelete(item)}
+            />
+          </View>
+        </View>
+        <Paragraph style={styles.description}>{item.description}</Paragraph>
+        <View style={styles.priceLocationContainer}>
+          <Paragraph style={styles.price}>Precio: ${item.price?.toFixed(2)}</Paragraph>
+          <Text style={styles.location}>
+            <IconButton 
+              icon="map-marker" 
+              size={16} 
+              style={styles.locationIcon}
+            /> 
+            {item.location}
+          </Text>
+        </View>
       </Card.Content>
     </Card>
   );
+
 
   if (loading) {
     return (
@@ -95,7 +136,7 @@ const ProductList = ({ ListHeaderComponent, contentContainerStyle, shopId }) => 
         </View>
       }
       refreshing={loading}
-      onRefresh={loadProducts} // Permite recargar con pull-to-refresh
+      onRefresh={loadProducts}
     />
   );
 };
@@ -141,7 +182,50 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  }
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  title: {
+    flex: 1,
+    marginRight: 8,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  description: {
+    marginBottom: 8,
+    color: '#666',
+  },
+  priceLocationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  price: {
+    fontWeight: 'bold',
+    color: '#2e7d32',
+  },
+  location: {
+    color: '#666',
+    fontStyle: 'italic',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationIcon: {
+    margin: 0,
+    padding: 0,
+  },
+  card: {
+    margin: 8,
+    elevation: 2,
+    backgroundColor: '#fff'
+  },
 });
 
 export default ProductList;

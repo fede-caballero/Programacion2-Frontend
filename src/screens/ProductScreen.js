@@ -4,14 +4,24 @@ import { FAB, Modal, Portal, Card, useTheme, Text, Avatar, ActivityIndicator } f
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductList from '../components/Product/ProductList';
 import AddProductForm from '../components/Product/AddProductForm';
+import EditProductForm from '../components/Product/EditProductForm';
+import DeleteProductModal from '../components/Product/DeleteProductModal';
+import { ProductProvider, useProduct } from '../components/Product/ProductContext';
 import { AuthContext } from '../context/AuthContext';
 
-const ProductScreen = () => {
-  const [isModalVisible, setModalVisible] = useState(false);
+const ProductScreenContent = () => {
+  const [isAddModalVisible, setAddModalVisible] = useState(false);
   const [shopData, setShopData] = useState(null);
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const { user } = useContext(AuthContext);
+  const { 
+    selectedProduct,
+    isEditModalVisible,
+    setIsEditModalVisible,
+    isDeleteModalVisible,
+    setIsDeleteModalVisible
+  } = useProduct();
 
   useEffect(() => {
     const getShopData = async () => {
@@ -30,8 +40,6 @@ const ProductScreen = () => {
               shopName: parsedUser.shop.shopName,
               shopLocation: parsedUser.shop.location
             });
-          } else {
-            console.error('Usuario no es tipo COMMERCE o no tiene shop asociada');
           }
         }
       } catch (error) {
@@ -43,10 +51,6 @@ const ProductScreen = () => {
 
     getShopData();
   }, []);
-
-  const handleCloseModal = () => {
-    setModalVisible(false);
-  };
 
   const ListHeader = () => (
     <View style={styles.headerContainer}>
@@ -103,13 +107,14 @@ const ProductScreen = () => {
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
         color={theme.colors.surface}
-        onPress={() => setModalVisible(true)}
+        onPress={() => setAddModalVisible(true)}
       />
-      
+
       <Portal>
+        {/* Modal para agregar producto */}
         <Modal
-          visible={isModalVisible}
-          onDismiss={handleCloseModal}
+          visible={isAddModalVisible}
+          onDismiss={() => setAddModalVisible(false)}
           contentContainerStyle={styles.modalContainer}
         >
           <Card style={styles.modalCard}>
@@ -126,15 +131,84 @@ const ProductScreen = () => {
                 </Text>
               </View>
               <AddProductForm 
-                closeModal={handleCloseModal}
+                closeModal={() => setAddModalVisible(false)}
                 shopId={shopData.shopId}
                 shopLocation={shopData.shopLocation}
               />
             </Card.Content>
           </Card>
         </Modal>
+
+        {/* Modal para editar producto */}
+        <Modal
+          visible={isEditModalVisible}
+          onDismiss={() => setIsEditModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Card style={styles.modalCard}>
+            <Card.Content>
+              <View style={styles.modalHeader}>
+                <Avatar.Icon 
+                  size={48} 
+                  icon="pencil"
+                  style={[styles.modalIcon, { backgroundColor: theme.colors.primary }]}
+                  color={theme.colors.surface}
+                />
+                <Text style={[styles.modalTitle, { color: theme.colors.primary }]}>
+                  Editar Producto
+                </Text>
+              </View>
+              {selectedProduct && (
+                <EditProductForm 
+                  product={selectedProduct}
+                  closeModal={() => setIsEditModalVisible(false)}
+                  shopId={shopData.shopId}
+                  shopLocation={shopData.shopLocation}
+                />
+              )}
+            </Card.Content>
+          </Card>
+        </Modal>
+
+        {/* Modal para eliminar producto */}
+        <Modal
+          visible={isDeleteModalVisible}
+          onDismiss={() => setIsDeleteModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Card style={styles.modalCard}>
+            <Card.Content>
+              <View style={styles.modalHeader}>
+                <Avatar.Icon 
+                  size={48} 
+                  icon="delete"
+                  style={[styles.modalIcon, { backgroundColor: theme.colors.error }]}
+                  color={theme.colors.surface}
+                />
+                <Text style={[styles.modalTitle, { color: theme.colors.error }]}>
+                  Eliminar Producto
+                </Text>
+              </View>
+              {selectedProduct && (
+                <DeleteProductModal 
+                  product={selectedProduct}
+                  closeModal={() => setIsDeleteModalVisible(false)}
+                />
+              )}
+            </Card.Content>
+          </Card>
+        </Modal>
       </Portal>
     </View>
+  );
+};
+
+// Componente principal que provee el contexto
+const ProductScreen = () => {
+  return (
+    <ProductProvider>
+      <ProductScreenContent />
+    </ProductProvider>
   );
 };
 
@@ -160,9 +234,6 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-  listContent: {
-    flexGrow: 1,
-  },
   headerContainer: {
     padding: 16,
     backgroundColor: '#f5f5f5',
@@ -170,7 +241,6 @@ const styles = StyleSheet.create({
   headerCard: {
     elevation: 4,
     borderRadius: 12,
-    backgroundColor: '#ffffff',
   },
   headerContent: {
     flexDirection: 'row',
@@ -187,6 +257,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
   },
+  listContent: {
+    flexGrow: 1,
+  },
   fab: {
     position: 'absolute',
     margin: 16,
@@ -199,7 +272,6 @@ const styles = StyleSheet.create({
   modalCard: {
     borderRadius: 12,
     elevation: 4,
-    backgroundColor: '#ffffff',
   },
   modalHeader: {
     flexDirection: 'row',

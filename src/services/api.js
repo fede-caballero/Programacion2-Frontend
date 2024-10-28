@@ -81,25 +81,67 @@ export const createProduct = async (productData) => {
   }
 };
 
-export const updateProduct = async (productData) => {
+export const updateProduct = async (productId, productData) => {
   try {
-    const response = await axios.put(`${API_URL}/api/products/${productData.id}`, productData);
+    console.log('Updating product:', productId, productData);
+    const formattedData = {
+      category: productData.category,
+      productName: productData.productName,
+      description: productData.description,
+      price: productData.price,
+      location: productData.location,
+      shop: {
+        id: productData.shop.id
+      }
+    };
+
+    const response = await axios.put(
+      `${API_URL}/api/products/${productId}`,
+      formattedData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      }
+    );
+    
+    console.log('Update response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error updating product:', error);
+    console.error('Error updating product:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
-}
+};
 
 export const deleteProduct = async (productId) => {
   try {
-    const response = await axios.delete(`${API_URL}/api/products/${productId}`);
+    console.log('Deleting product:', productId);
+    const response = await axios.delete(
+      `${API_URL}/api/products/${productId}`,
+      {
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
+    );
+    
+    console.log('Delete response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error deleting product:', error);
+    console.error('Error deleting product:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
-}
+};
+
 
 // Funciones de shops
 
