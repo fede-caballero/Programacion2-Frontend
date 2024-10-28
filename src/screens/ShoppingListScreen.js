@@ -1,6 +1,19 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
-import { Text, FAB, List, Button, Surface, TextInput, Portal, Dialog, Modal, Card, IconButton } from 'react-native-paper';
+import { 
+  Text, 
+  FAB, 
+  List, 
+  Button, 
+  Surface, 
+  TextInput, 
+  Portal, 
+  Dialog, 
+  Modal, 
+  Card, 
+  IconButton,
+  ActivityIndicator 
+} from 'react-native-paper';
 import { fetchShoppingLists, fetchProducts } from '../services/api';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -65,10 +78,9 @@ const CATEGORIES = [
 const ShoppingListScreen = ({ navigation }) => {
   const [shoppingLists, setShoppingLists] = useState([]);
   const [selectedList, setSelectedList] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [similarProducts, setSimilarProducts] = useState([]);
   
-  // Estados para el modal de nuevo item
   const [modalVisible, setModalVisible] = useState(false);
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const [newItem, setNewItem] = useState({
@@ -82,41 +94,74 @@ const ShoppingListScreen = ({ navigation }) => {
   const loadShoppingLists = async () => {
     try {
       setLoading(true);
-      const lists = await fetchShoppingLists();
-      setShoppingLists(lists || []);
+      const listsData = await fetchShoppingLists();
+      
+      const validLists = Array.isArray(listsData) 
+        ? listsData.map(list => ({
+            id: list.id,
+            listName: list.listName || 'Lista sin nombre',
+            description: list.description,
+            items: Array.isArray(list.items) 
+              ? list.items.map(item => ({
+                  id: item.id,
+                  itemName: item.itemName,
+                  quantity: item.quantity,
+                  notes: item.notes
+                }))
+              : []
+          }))
+        : [];
+      setShoppingLists(validLists);
       
       if (selectedList) {
-        const updatedSelectedList = lists.find(list => list.id === selectedList.id);
+        const updatedSelectedList = validLists.find(list => list.id === selectedList.id);
         setSelectedList(updatedSelectedList || null);
       }
     } catch (error) {
       console.error('Error loading shopping lists:', error);
       setShoppingLists([]);
+      setSelectedList(null);
     } finally {
       setLoading(false);
     }
   };
 
+  
   const findSimilarProducts = async (itemName, category) => {
+    if (!itemName || !category) {
+      console.warn('Nombre del item o categoría faltante');
+      return;
+    }
+    
     try {
-      // Obtener todos los productos
       const products = await fetchProducts();
+      if (!Array.isArray(products)) {
+        console.warn('Los productos no son un array válido');
+        return;
+      }
       
-      // Filtrar productos similares por nombre y categoría
       const similar = products.filter(product => 
+        product && 
+        product.id &&
         product.category === category &&
-        product.productName.toLowerCase().includes(itemName.toLowerCase())
+        product.productName?.toLowerCase().includes(itemName.toLowerCase())
       );
-
-      // Ordenar por precio
-      similar.sort((a, b) => a.price - b.price);
+  
+      similar.sort((a, b) => (a.price || 0) - (b.price || 0));
       
       setSimilarProducts(similar);
       if (similar.length > 0) {
         setPriceSuggestionsVisible(true);
+      } else {
+        // Si no hay productos similares, continuar directamente con la adición
+        await confirmAddItem();
       }
     } catch (error) {
       console.error('Error finding similar products:', error);
+      Alert.alert(
+        'Error',
+        'No se pudieron buscar productos similares'
+      );
     }
   };
 
@@ -146,15 +191,20 @@ const ShoppingListScreen = ({ navigation }) => {
   };
 
   const confirmAddItem = async (suggestedPrice = null) => {
+    if (!selectedList?.id) {
+      Alert.alert('Error', 'Por favor, seleccione una lista primero');
+      return;
+    }
+  
     try {
       const itemToAdd = {
-        itemName: newItem.name,
+        itemName: newItem.name.trim(),
         category: newItem.category,
-        description: newItem.description,
+        description: newItem.description.trim(),
         quantity: parseInt(newItem.quantity) || 1,
         suggestedPrice: suggestedPrice
       };
-
+  
       // Aquí deberías hacer la llamada a tu API para agregar el item
       // await addCustomItemToShoppingList(selectedList.id, itemToAdd);
       
@@ -170,34 +220,96 @@ const ShoppingListScreen = ({ navigation }) => {
       setModalVisible(false);
       setPriceSuggestionsVisible(false);
       setSimilarProducts([]);
+  
+      Alert.alert('Éxito', 'Item agregado correctamente');
     } catch (error) {
       console.error('Error adding item to list:', error);
-      alert('Error al añadir el item a la lista.');
+      Alert.alert(
+        'Error',
+        'No se pudo agregar el item a la lista'
+      );
     }
   };
 
-  const renderShoppingList = ({ item }) => (
-    <Surface style={[
-      styles.listItem,
-      selectedList?.id === item.id && styles.selectedListItem
-    ]}>
+  const renderShoppingList = useCallback(({ item }) => {
+    // Validar que el item tenga id
+    if (!item?.id) return null;
+
+    return (
+      <Surface 
+        key={`surface-${item.id}`}  // Agregar key aquí
+        style={[
+          styles.listItem,
+          selectedList?.id === item.id && styles.selectedListItem
+        ]}
+      >
+        <List.Item
+          title={item.listName || 'Lista sin nombre'}
+          description={item.description}
+          onPress={() => handleListSelection(item)}
+          left={props => <List.Icon {...props} icon={selectedList?.id === item.id ? "checkbox-marked" : "checkbox-blank-outline"} />}
+          right={() => (
+            <View style={styles.listItemRight}>
+              <Text style={styles.itemCount}>
+                {(item.items?.length || 0)} items
+              </Text>
+            </View>
+          )}
+        />
+      </Surface>
+    );
+  }, [selectedList]);
+
+  const renderSimilarProduct = useCallback(({ item: product, index }) => {
+    if (!product?.id) return null;
+
+    return (
       <List.Item
-        title={item.listName}
-        description={item.description}
-        onPress={() => handleListSelection(item)}
-        left={props => <List.Icon {...props} icon={selectedList?.id === item.id ? "checkbox-marked" : "checkbox-blank-outline"} />}
-        right={() => (
-          <View style={styles.listItemRight}>
-            <Text style={styles.itemCount}>
-              {(item.items?.length || 0)} items
-            </Text>
-          </View>
+        key={`product-${product.id}`}  // Agregar key aquí
+        title={product.productName || 'Producto sin nombre'}
+        description={`${product.shop?.name || 'Tienda'} - $${product.price || 0}`}
+        left={props => (
+          <List.Icon
+            {...props}
+            icon={index === 0 ? "star" : "store"}
+            color={index === 0 ? "#FFD700" : undefined}
+          />
         )}
+        onPress={() => confirmAddItem(product.price)}
+        style={styles.suggestionItem}
       />
-    </Surface>
-  );
+    );
+  }, []);
+
+  const renderCategory = useCallback(({ item: category }) => {
+    if (!category?.id) return null;
+
+    return (
+      <Button
+        key={`category-${category.id}`}  // Agregar key aquí
+        mode="outlined"
+        onPress={() => {
+          setNewItem(prev => ({ ...prev, category: category.id }));
+          setCategoryModalVisible(false);
+        }}
+        style={styles.categoryButton}
+        icon={category.icon}
+      >
+        {category.name}
+      </Button>
+    );
+  }, []);
 
   const selectedCategory = CATEGORIES.find(cat => cat.id === newItem.category);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196f3" />
+        <Text style={styles.loadingText}>Cargando listas...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -211,10 +323,16 @@ const ShoppingListScreen = ({ navigation }) => {
         <FlatList
           data={shoppingLists}
           renderItem={renderShoppingList}
-          keyExtractor={item => String(item.id)}
+          keyExtractor={item => `list-${item?.id || Date.now()}-${Math.random()}`}
           style={styles.list}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No hay listas disponibles</Text>
+            <View style={styles.emptyContainer}>
+              <Icon name="clipboard-text-off" size={48} color="#666" />
+              <Text style={styles.emptyText}>No hay listas disponibles</Text>
+              <Text style={styles.emptySubtext}>
+                Presiona el botón + para crear una nueva lista
+              </Text>
+            </View>
           }
         />
       </View>
@@ -258,23 +376,27 @@ const ShoppingListScreen = ({ navigation }) => {
                     setModalVisible(false);
                   }}
                 />
+                
               </View>
-              <ScrollView style={styles.categoriesList}>
-                {CATEGORIES.map((cat) => (
+              <FlatList
+                data={CATEGORIES}
+                keyExtractor={(item) => `category-${item.id}`}
+                renderItem={({ item: category }) => (
                   <Button
-                    key={cat.id}
+                    key={`button-${category.id}`}
                     mode="outlined"
                     onPress={() => {
-                      setNewItem({ ...newItem, category: cat.id });
+                      setNewItem({ ...newItem, category: category.id });
                       setCategoryModalVisible(false);
                     }}
                     style={styles.categoryButton}
-                    icon={cat.icon}
+                    icon={category.icon}
                   >
-                    {cat.name}
+                    {category.name}
                   </Button>
-                ))}
-              </ScrollView>
+                )}
+                style={styles.categoriesList}
+              />
             </Card.Content>
           </Card>
         </Modal>
@@ -365,24 +487,30 @@ const ShoppingListScreen = ({ navigation }) => {
             <Card.Content>
               <Text style={styles.suggestionsTitle}>Productos similares encontrados</Text>
               
-              <ScrollView style={styles.suggestionsList}>
-                {similarProducts.map((product, index) => (
-                  <List.Item
-                    key={product.id}
-                    title={product.productName}
-                    description={`${product.shop?.name || 'Tienda'} - $${product.price}`}
-                    left={props => (
-                      <List.Icon
-                        {...props}
-                        icon={index === 0 ? "star" : "store"}
-                        color={index === 0 ? "#FFD700" : undefined}
-                      />
-                    )}
-                    onPress={() => confirmAddItem(product.price)}
-                    style={styles.suggestionItem}
-                  />
-                ))}
-              </ScrollView>
+              <FlatList
+                  data={similarProducts}
+                  keyExtractor={(item) => `product-${item.id}`}
+                  renderItem={({ item: product, index }) => (
+                    <List.Item
+                      key={`suggestion-${product.id}`}
+                      title={product.productName || 'Producto sin nombre'}
+                      description={`${product.shop?.name || 'Tienda'} - $${product.price || 0}`}
+                      left={props => (
+                        <List.Icon
+                          {...props}
+                          icon={index === 0 ? "star" : "store"}
+                          color={index === 0 ? "#FFD700" : undefined}
+                        />
+                      )}
+                      onPress={() => confirmAddItem(product.price)}
+                      style={styles.suggestionItem}
+                    />
+                  )}
+                  style={styles.suggestionsList}
+                  ListEmptyComponent={() => (
+                    <Text style={styles.emptyText}>No se encontraron productos similares</Text>
+                  )}
+                />
 
               <Button
                 mode="contained"
@@ -406,6 +534,7 @@ const ShoppingListScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     padding: 10,
@@ -471,6 +600,114 @@ const styles = StyleSheet.create({
   },
   addButton: {
     marginHorizontal: 8,
+  },
+  categoryModalContainer: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 0,
+    maxHeight: '80%',
+  },
+  categoryCard: {
+    height: '100%',
+  },
+  categoryModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  categoryModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  categoriesList: {
+    flexGrow: 0,
+  },
+  categoryButton: {
+    marginVertical: 4,
+    marginHorizontal: 8,
+  },
+  modalContainer: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    maxHeight: '80%',
+  },
+  selectedCategoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  selectedCategoryLabel: {
+    fontSize: 16,
+    marginRight: 8,
+    color: '#666',
+  },
+  selectedCategoryText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  changeButton: {
+    marginLeft: 8,
+  },
+  input: {
+    marginBottom: 16,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+  },
+  button: {
+    marginLeft: 8,
+  },
+  suggestionsList: {
+    maxHeight: 300,
+  },
+  suggestionItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  addWithoutSuggestionButton: {
+    marginTop: 16,
+  },
+  suggestionsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  addItemSection: {
+    padding: 16,
+    backgroundColor: 'white',
+    elevation: 4,
+  },
+  addItemButton: {
+    width: '100%',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    minHeight: 200,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#666',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

@@ -11,6 +11,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProductScreen from '../screens/ProductScreen';
+import BuyerProductScreen from '../screens/BuyerProductScreen';  // Importa BuyerProductScreen
 import ShopScreen from '../screens/ShopScreen';
 import ShoppingListScreen from '../screens/ShoppingListScreen';
 import UserScreen from '../screens/UserScreen';
@@ -83,7 +84,11 @@ const tabScreenOptions = ({ route }) => ({
 const BuyerTabs = () => (
   <Tab.Navigator screenOptions={tabScreenOptions}>
     <Tab.Screen name="Home" component={HomeScreen} />
-    <Tab.Screen name="Products" component={ProductScreen} />
+    <Tab.Screen 
+      name="Products" 
+      component={BuyerProductScreen}  // Cambiado a BuyerProductScreen
+      options={{ title: 'Catálogo de Productos' }}
+    />
     <Tab.Screen name="Shops" component={ShopScreen} />
     <Tab.Screen name="Lists" component={ShoppingListStack} />
     <Tab.Screen name="Profile" component={ProfileStack} />
@@ -93,7 +98,11 @@ const BuyerTabs = () => (
 const CommerceTabs = () => (
   <Tab.Navigator screenOptions={tabScreenOptions}>
     <Tab.Screen name="Home" component={HomeScreen} />
-    <Tab.Screen name="Products" component={ProductScreen} />
+    <Tab.Screen 
+      name="Products" 
+      component={ProductScreen}
+      options={{ title: 'Mis Productos' }}
+    />
     <Tab.Screen name="Profile" component={ProfileStack} />
   </Tab.Navigator>
 );

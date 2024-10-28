@@ -107,10 +107,19 @@ const AddProductForm = ({ closeModal, shopId, shopLocation }) => {
         response: err.response?.data,
         status: err.response?.status
       });
-      setError(
-        err.response?.data || 
-        'Error al crear el producto. Por favor, verifique los datos e intente nuevamente.'
-      );
+      
+      // Modificación aquí: Extraer el mensaje de error apropiado
+      let errorMessage = 'Error al crear el producto. Por favor, verifique los datos e intente nuevamente.';
+      
+      if (err.response?.status === 415) {
+        errorMessage = 'Error: Formato de datos no soportado. Por favor, contacte al soporte técnico.';
+      } else if (err.response?.data?.error) {
+        errorMessage = `Error: ${err.response.data.error}`;
+      } else if (typeof err.response?.data === 'string') {
+        errorMessage = err.response.data;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

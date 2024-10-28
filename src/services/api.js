@@ -51,14 +51,23 @@ export const createProduct = async (productData) => {
       price: productData.price,
       location: productData.location,
       shop: {
-        id: productData.shop.shopId // Usamos directamente shopId sin intentar parsearlo
+        id: productData.shop.shopId
       }
-      
     };
 
     console.log('Sending product data:', formattedData);
     
-    const response = await axios.post(`${API_URL}/api/products`, formattedData);
+    const response = await axios.post(
+      `${API_URL}/api/products`, 
+      formattedData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      }
+    );
+    
     console.log('Server response:', response.data);
     return response.data;
   } catch (error) {
@@ -176,7 +185,7 @@ export const createShoppingList = async (listData) => {
 api.interceptors.request.use(
   async (config) => {
       const token = await AsyncStorage.getItem('userToken');
-      console.log('Token from storage:', token);
+      console.log('Token retrieved from storage:', token);
       
       if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -260,12 +269,42 @@ export const updateUser = async (userId, updatedUser) => {
 
 // Nuevas funciones para manejar listas de compras y productos
 
-export const addItemToShoppingList = async (shoppingListId, productId) => {
+export const addItemToShoppingList = async (listId, itemData) => {
   try {
-    const response = await axios.post(`${API_URL}/api/shopping-lists/${shoppingListId}/items`, { productId });
+    const userData = await AsyncStorage.getItem('userData');
+    if (!userData) {
+      throw new Error('No user data found');
+    }
+    
+    const { userId } = JSON.parse(userData);
+    if (!userId) {
+      throw new Error('No user ID found');
+    }
+
+    console.log('Adding item to list:', {
+      userId,
+      listId,
+      itemData
+    });
+
+    const response = await api.post(
+      `/api/users/${userId}/shopping-lists/${listId}/items`,
+      {
+        productId: itemData.productId,
+        quantity: itemData.quantity || 1,
+        notes: itemData.notes || ''
+      }
+    );
+
+    console.log('Server response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error adding item to shopping list:', error);
+    console.error('Error details:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      endpoint: error.config?.url
+    });
     throw error;
   }
 };
