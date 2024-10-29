@@ -86,6 +86,63 @@ export const createProduct = async (productData) => {
   }
 };
 
+export const createProducts = async (products) => {
+  try {
+    console.log('Creating multiple products:', products);
+    
+    const response = await api.post('/api/products/batch', products, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('Batch creation response:', response.data);
+    
+    // Verificar si hubo errores en algunos productos
+    if (response.data.errors && response.data.errors.length > 0) {
+      console.warn('Some products failed to create:', response.data.errors);
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error creating products:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+const createMultipleProducts = async (productsList) => {
+  try {
+    // Formatear los productos según la estructura requerida
+    const formattedProducts = productsList.map(product => ({
+      productName: product.productName,
+      description: product.description,
+      price: product.price,
+      location: product.location,
+      category: product.category,
+      shop: {
+        id: product.shopId
+      }
+    }));
+
+    const result = await createProducts(formattedProducts);
+    
+    // Manejar la respuesta
+    if (result.successfulProducts) {
+      console.log(`${result.successfulProducts.length} productos creados exitosamente`);
+    }
+    
+    if (result.errors) {
+      console.log(`${result.errors.length} productos fallaron al crearse`);
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error en la creación en lote:', error);
+    throw error;
+  }
+};
+
+
 export const updateProduct = async (productId, productData) => {
   try {
     console.log('Updating product:', productId, productData);
@@ -594,6 +651,26 @@ export const getShoppingListDetails = async (shoppingListId) => {
       response: error.response?.data,
       status: error.response?.status
     });
+    throw error;
+  }
+};
+
+export const compareShoppingListPrices = async (shoppingListId) => {
+  try {
+    const response = await api.get(`/api/products/compare-prices/${shoppingListId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al comparar precios:', error);
+    throw error;
+  }
+};
+
+export const getBestShoppingOption = async (shoppingListId) => {
+  try {
+    const response = await api.get(`/api/products/best-option/${shoppingListId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener la mejor opción de compra:', error);
     throw error;
   }
 };

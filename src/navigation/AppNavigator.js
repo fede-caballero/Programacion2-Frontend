@@ -104,7 +104,6 @@ const BuyerTabs = () => (
       component={BuyerProductScreen}
       options={{ title: 'Catálogo de Productos' }}
     />
-    <Tab.Screen name="Shops" component={ShopScreen} />
     <Tab.Screen name="Lists" component={ShoppingListStack} />
     <Tab.Screen name="Profile" component={ProfileStack} />
   </Tab.Navigator>

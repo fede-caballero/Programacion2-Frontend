@@ -1,8 +1,22 @@
 import React, { useState, useContext } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { updateUser } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+
+const theme = {
+  colors: {
+    primary: '#1E4D8C',
+    secondary: '#34A853',
+    accent: '#4285F4',
+    background: '#F8FAFD',
+    surface: '#FFFFFF',
+    error: '#DC3545',
+    text: '#1A1F36',
+    disabled: '#A0AEC0',
+    placeholder: '#718096',
+  },
+};
 
 const EditProfileScreen = ({ navigation }) => {
   const { user, setUser } = useContext(AuthContext);
@@ -39,13 +53,6 @@ const EditProfileScreen = ({ navigation }) => {
         email: updatedUser.email
       });
 
-      await updateUser(userId, updatedUser);
-      setUser({
-        ...user,
-        name: updatedUser.name,
-        email: updatedUser.email
-      })
-
       alert('Perfil actualizado con éxito');
       navigation.goBack();
     } catch (error) {
@@ -55,12 +62,10 @@ const EditProfileScreen = ({ navigation }) => {
     } finally {
       setIsLoading(false);
     }
-
-
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.title}>Editar Perfil</Text>
       {/* Agrega un texto para debugging */}
       <Text style={styles.debugText}>ID Usuario: {user?.id || user?.userId || user?.user_id || 'No disponible'}</Text>
@@ -84,31 +89,40 @@ const EditProfileScreen = ({ navigation }) => {
         style={styles.input}
       />
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      <Button mode="contained" onPress={handleUpdateProfile} style={styles.button}>
+      <Button 
+        mode="contained" 
+        onPress={handleUpdateProfile} 
+        style={styles.button}
+        loading={isLoading}
+        disabled={isLoading}
+      >
         Actualizar Perfil
       </Button>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
     padding: 20,
-    justifyContent: 'center',
   },
   title: {
     fontSize: 24,
     marginBottom: 20,
+    color: theme.colors.text,
   },
   input: {
     marginBottom: 10,
+    backgroundColor: theme.colors.surface,
   },
   button: {
     marginTop: 10,
+    backgroundColor: theme.colors.primary,
   },
   errorText: {
-    color: 'red',
+    color: theme.colors.error,
     marginBottom: 10,
   },
   debugText: {

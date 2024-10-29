@@ -3,6 +3,20 @@ import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { Card, Title, Paragraph, Button, Portal, Modal, Text, List, ActivityIndicator, Searchbar } from 'react-native-paper';
 import { fetchProducts, fetchShoppingLists, addItemToShoppingList } from '../services/api';
 
+const theme = {
+  colors: {
+    primary: '#1E4D8C',
+    secondary: '#34A853',
+    accent: '#4285F4',
+    background: '#F8FAFD',
+    surface: '#FFFFFF',
+    error: '#DC3545',
+    text: '#1A1F36',
+    disabled: '#A0AEC0',
+    placeholder: '#718096',
+  },
+};
+
 const BuyerProductScreen = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,28 +34,19 @@ const BuyerProductScreen = () => {
         
         // Cargar listas de compras del usuario actual
         const listsData = await fetchShoppingLists();
-        // Filtrar listas válidas (que tengan id y nombre)
         const validLists = Array.isArray(listsData) 
           ? listsData.filter(list => list && list.id && list.listName)
           : [];
         setShoppingLists(validLists);
 
-        // Cargar productos
+        // Cargar productos y eliminar duplicados por nombre
         const productsData = await fetchProducts();
-        const validProducts = (productsData || [])
-          .filter(product => 
-            product && 
-            product.productName && 
-            product.price && 
-            product.shop
-          )
-          .map((product, index) => ({
-            ...product,
-            productId: product.productId || `temp-${index}`
-          }));
-        
-        setProducts(validProducts);
-        setFilteredProducts(validProducts);
+        const uniqueProducts = Array.from(
+          new Map(productsData.map(product => [product.productName, product])).values()
+        );
+
+        setProducts(uniqueProducts);
+        setFilteredProducts(uniqueProducts);
       } catch (error) {
         console.error('Error en la carga inicial:', error);
         Alert.alert(
@@ -59,7 +64,6 @@ const BuyerProductScreen = () => {
     loadInitialData();
   }, []);
 
-  // Efecto para filtrar productos basado en la búsqueda
   useEffect(() => {
     if (Array.isArray(products)) {
       const filtered = products.filter(product => 
@@ -96,18 +100,11 @@ const BuyerProductScreen = () => {
         return;
       }
   
-      // Formatear los datos del item
       const itemData = {
         productId: selectedProduct.productId,
         quantity: 1,
-        notes: selectedProduct.productName, // Usar el nombre del producto como nota
-        price: selectedProduct.price
+        notes: selectedProduct.productName
       };
-  
-      console.log('Enviando datos al servidor:', {
-        listId,
-        itemData
-      });
     
       await addItemToShoppingList(listId, itemData);
       
@@ -137,12 +134,9 @@ const BuyerProductScreen = () => {
         <Card.Content>
           <Title>{item.productName}</Title>
           <Paragraph>{item.description || 'Sin descripción'}</Paragraph>
-          <View style={styles.productDetails}>
-            <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-            <View style={styles.shopInfo}>
-              <Text style={styles.shopLabel}>Tienda:</Text>
-              <Text style={styles.shopName}>{item.shop?.name || 'No especificada'}</Text>
-            </View>
+          <View style={styles.shopInfo}>
+            <Text style={styles.shopLabel}>Tienda:</Text>
+            <Text style={styles.shopName}>{item.shop?.name || 'No especificada'}</Text>
           </View>
         </Card.Content>
         <Card.Actions>
@@ -150,6 +144,7 @@ const BuyerProductScreen = () => {
             mode="contained"
             onPress={() => handleAddToList(item)}
             disabled={!item.productId}
+            style={styles.button}
           >
             Añadir a lista
           </Button>
@@ -208,6 +203,7 @@ const BuyerProductScreen = () => {
                       setModalVisible(false);
                       navigation.navigate('AddShoppingList');
                     }}
+                    style={styles.button}
                   >
                     Crear Lista Nueva
                   </Button>
@@ -241,6 +237,7 @@ const BuyerProductScreen = () => {
               <Button 
                 onPress={() => !addingToList && setModalVisible(false)}
                 disabled={addingToList}
+                style={styles.button}
               >
                 Cancelar
               </Button>
@@ -255,67 +252,61 @@ const BuyerProductScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   searchbar: {
     margin: 16,
-    elevation: 4,
-  },
-  productList: {
-    padding: 16,
+    backgroundColor: theme.colors.surface,
   },
   productCard: {
-    marginBottom: 16,
-    elevation: 4,
-  },
-  productDetails: {
-    marginTop: 8,
-  },
-  price: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2196f3',
-    marginBottom: 4,
+    margin: 16,
+    borderRadius: 12,
+    elevation: 2,
+    backgroundColor: theme.colors.surface,
   },
   shopInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
+    marginTop: 8,
   },
   shopLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginRight: 4,
+    fontWeight: 'bold',
+    color: theme.colors.text,
   },
   shopName: {
-    fontSize: 14,
-    color: '#000',
-    fontWeight: '500',
+    marginLeft: 4,
+    color: theme.colors.placeholder,
   },
-  modalContainer: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
+  button: {
+    backgroundColor: theme.colors.primary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: theme.colors.background,
+  },
+  productList: {
+    paddingBottom: 16,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 16,
+  },
+  modalContainer: {
+    backgroundColor: theme.colors.surface,
     padding: 20,
+    margin: 20,
+    borderRadius: 8,
   },
   noListsContainer: {
     alignItems: 'center',
-    padding: 20,
+    marginTop: 20,
   },
   noListsText: {
-    textAlign: 'center',
-    marginBottom: 16,
-    color: '#666',
+    marginBottom: 20,
+    color: theme.colors.text,
   },
 });
 

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Button, Card, Avatar, IconButton } from 'react-native-paper';
+import { Text, Button, Card, Avatar } from 'react-native-paper';
+import { AuthContext } from '../context/AuthContext';
+import api from '../services/api';
 
 const theme = {
   colors: {
@@ -17,47 +19,20 @@ const theme = {
 };
 
 const HomeScreen = ({ navigation }) => {
+  const { user } = useContext(AuthContext);
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.welcomeText}>Bienvenido,</Text>
-          <Text style={styles.userName}>Carlos</Text>
+          <Text style={styles.userName}>{user?.name || 'Usuario'}</Text>
         </View>
         <Avatar.Image 
           size={50} 
-          source={{ uri: 'https://ui-avatars.com/api/?name=Carlos&background=1E4D8C&color=fff' }}
+          source={{ uri: `https://ui-avatars.com/api/?name=${user?.name || 'Usuario'}&background=1E4D8C&color=fff` }}
         />
-      </View>
-
-      {/* Stats Cards */}
-      <View style={styles.statsContainer}>
-        <Card style={styles.statsCard}>
-          <Card.Content>
-            <Avatar.Icon 
-              size={40} 
-              icon="trending-up" 
-              style={styles.statsIcon} 
-              color={theme.colors.secondary}
-            />
-            <Text style={styles.statsValue}>$2,450</Text>
-            <Text style={styles.statsLabel}>Ahorros del mes</Text>
-          </Card.Content>
-        </Card>
-
-        <Card style={styles.statsCard}>
-          <Card.Content>
-            <Avatar.Icon 
-              size={40} 
-              icon="list-status" 
-              style={styles.statsIcon} 
-              color={theme.colors.accent}
-            />
-            <Text style={styles.statsValue}>15</Text>
-            <Text style={styles.statsLabel}>Listas activas</Text>
-          </Card.Content>
-        </Card>
       </View>
 
       {/* Quick Actions */}
@@ -149,30 +124,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: theme.colors.text,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  statsCard: {
-    flex: 1,
-    marginHorizontal: 6,
-    borderRadius: 12,
-    elevation: 2,
-  },
-  statsIcon: {
-    backgroundColor: 'transparent',
-  },
-  statsValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginTop: 8,
-  },
-  statsLabel: {
-    fontSize: 14,
-    color: theme.colors.placeholder,
   },
   sectionTitle: {
     fontSize: 18,
