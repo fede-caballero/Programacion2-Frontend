@@ -4,8 +4,13 @@ import { API_URL } from '../config/config';
 
 
 const api = axios.create({
-  baseURL: API_URL
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
 });
+
 
 // Funciones de productos
 export const fetchProducts = async () => {
@@ -182,6 +187,7 @@ export const fetchShoppingLists = async () => {
 };
 
 
+// Función para crear lista de compras
 export const createShoppingList = async (listData) => {
   try {
     const userData = await AsyncStorage.getItem('userData');
@@ -195,8 +201,8 @@ export const createShoppingList = async (listData) => {
     }
 
     const shoppingListData = {
-      listName: listData.listName,
-      description: listData.description
+      listName: listData.listName.trim(),
+      description: listData.description?.trim() || null
     };
 
     console.log('Creating shopping list:', {
@@ -206,7 +212,13 @@ export const createShoppingList = async (listData) => {
 
     const response = await api.post(
       `/api/users/${userId}/shopping-lists`,
-      shoppingListData
+      shoppingListData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      }
     );
 
     console.log('Shopping list created:', response.data);
@@ -215,11 +227,13 @@ export const createShoppingList = async (listData) => {
     console.error('Error creating shopping list:', {
       message: error.message,
       response: error.response?.data,
-      status: error.response?.status
+      status: error.response?.status,
+      headers: error.config?.headers
     });
     throw error;
   }
 };
+
 
 // Funciones de Usuario Registro y Login
 
@@ -323,40 +337,120 @@ export const addItemToShoppingList = async (listId, itemData) => {
       throw new Error('No user ID found');
     }
 
+    const formattedData = {
+      itemName: itemData.notes ? `Producto: ${itemData.notes}` : 'Producto sin nombre',
+      quantity: itemData.quantity || 1,
+      notes: itemData.notes || '',
+      productId: itemData.productId
+    };
+
     console.log('Adding item to list:', {
       userId,
       listId,
-      itemData
+      formattedData
     });
 
     const response = await api.post(
       `/api/users/${userId}/shopping-lists/${listId}/items`,
+      formattedData,
       {
-        productId: itemData.productId,
-        quantity: itemData.quantity || 1,
-        notes: itemData.notes || ''
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       }
     );
 
     console.log('Server response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error details:', {
+    console.error('Error adding item to list:', {
       message: error.message,
+      response: error.response?.data,
       status: error.response?.status,
-      data: error.response?.data,
-      endpoint: error.config?.url
+      headers: error.config?.headers
     });
     throw error;
   }
 };
 
-export const removeItemFromShoppingList = async (shoppingListId, itemId) => {
+export const removeItemFromList = async (listId, itemId) => {
   try {
-    const response = await axios.delete(`${API_URL}/api/shopping-lists/${shoppingListId}/items/${itemId}`);
+    const userData = await AsyncStorage.getItem('userData');
+    if (!userData) {
+      throw new Error('No user data found');
+    }
+    
+    const { userId } = JSON.parse(userData);
+    if (!userId) {
+      throw new Error('No user ID found');
+    }
+
+    console.log('Removing item:', {
+      userId,
+      listId,
+      itemId
+    });
+
+    const response = await api.delete(
+      `/api/users/${userId}/shopping-lists/${listId}/items/${itemId}`,
+      {
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    console.log('Remove item response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error removing item from shopping list:', error);
+    console.error('Error removing item:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
+  }
+};
+
+export const updateItemQuantity = async (listId, itemId, quantity) => {
+  try {
+    const userData = await AsyncStorage.getItem('userData');
+    if (!userData) {
+      throw new Error('No user data found');
+    }
+    
+    const { userId } = JSON.parse(userData);
+    if (!userId) {
+      throw new Error('No user ID found');
+    }
+
+    console.log('Updating item quantity:', {
+      userId,
+      listId,
+      itemId,
+      quantity
+    });
+
+    const response = await api.patch(
+      `/api/users/${userId}/shopping-lists/${listId}/items/${itemId}`,
+      { quantity },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    console.log('Update quantity response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating quantity:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 };
@@ -383,8 +477,52 @@ export const getShoppingListDetails = async (shoppingListId) => {
       throw new Error('No user ID found');
     }
 
-    const response = await api.get(`/api/users/${userId}/shopping-lists/${shoppingListId}`);
-    return response.data;
+    console.log('Fetching shopping list details:', {
+      userId,
+      shoppingListId
+    });
+
+    const response = await api.get(
+      `/api/users/${userId}/shopping-lists/${shoppingListId}`,
+      {
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    console.log('Raw shopping list response:', response.data);
+
+    // Asegurarse de que los items existan y sean un array
+    const list = response.data;
+    const items = Array.isArray(list.items) ? list.items : [];
+
+    // Transformar los datos manteniendo toda la información necesaria
+    const transformedList = {
+      id: list.id,
+      listName: list.listName,
+      description: list.description,
+      items: items.map(item => ({
+        id: item.id,
+        itemName: item.itemName || 'Sin nombre',
+        quantity: item.quantity || 1,
+        notes: item.notes || '',
+        product: item.product ? {
+          id: item.product.productId,
+          productName: item.product.productName,
+          price: item.product.price,
+          description: item.product.description,
+          shop: item.product.shop ? {
+            id: item.product.shop.id,
+            name: item.product.shop.shopName,
+            location: item.product.shop.location
+          } : null
+        } : null
+      }))
+    };
+
+    console.log('Transformed shopping list:', transformedList);
+    return transformedList;
   } catch (error) {
     console.error('Error fetching shopping list details:', {
       message: error.message,

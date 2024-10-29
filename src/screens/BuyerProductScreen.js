@@ -96,19 +96,20 @@ const BuyerProductScreen = () => {
         return;
       }
   
-      // Log para debug
+      // Formatear los datos del item
+      const itemData = {
+        productId: selectedProduct.productId,
+        quantity: 1,
+        notes: selectedProduct.productName, // Usar el nombre del producto como nota
+        price: selectedProduct.price
+      };
+  
       console.log('Enviando datos al servidor:', {
         listId,
-        productId: selectedProduct.productId,
-        quantity: 1,
-        notes: `Producto: ${selectedProduct.productName}`
+        itemData
       });
     
-      await addItemToShoppingList(listId, {
-        productId: selectedProduct.productId,
-        quantity: 1,
-        notes: `Producto: ${selectedProduct.productName}`
-      });
+      await addItemToShoppingList(listId, itemData);
       
       setModalVisible(false);
       setSelectedProduct(null);

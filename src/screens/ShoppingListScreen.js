@@ -232,12 +232,10 @@ const ShoppingListScreen = ({ navigation }) => {
   };
 
   const renderShoppingList = useCallback(({ item }) => {
-    // Validar que el item tenga id
     if (!item?.id) return null;
-
+  
     return (
       <Surface 
-        key={`surface-${item.id}`}  // Agregar key aquí
         style={[
           styles.listItem,
           selectedList?.id === item.id && styles.selectedListItem
@@ -247,18 +245,30 @@ const ShoppingListScreen = ({ navigation }) => {
           title={item.listName || 'Lista sin nombre'}
           description={item.description}
           onPress={() => handleListSelection(item)}
-          left={props => <List.Icon {...props} icon={selectedList?.id === item.id ? "checkbox-marked" : "checkbox-blank-outline"} />}
+          left={props => (
+            <List.Icon {...props} 
+              icon={selectedList?.id === item.id ? "checkbox-marked" : "checkbox-blank-outline"} 
+            />
+          )}
           right={() => (
             <View style={styles.listItemRight}>
               <Text style={styles.itemCount}>
                 {(item.items?.length || 0)} items
               </Text>
+              <IconButton
+                icon="chevron-right"
+                size={24}
+                onPress={() => navigation.navigate('ShoppingListDetail', {
+                  listId: item.id,
+                  listName: item.listName
+                })}
+              />
             </View>
           )}
         />
       </Surface>
     );
-  }, [selectedList]);
+  }, [selectedList, navigation]);
 
   const renderSimilarProduct = useCallback(({ item: product, index }) => {
     if (!product?.id) return null;

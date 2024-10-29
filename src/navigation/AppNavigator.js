@@ -11,9 +11,10 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProductScreen from '../screens/ProductScreen';
-import BuyerProductScreen from '../screens/BuyerProductScreen';  // Importa BuyerProductScreen
+import BuyerProductScreen from '../screens/BuyerProductScreen';
 import ShopScreen from '../screens/ShopScreen';
 import ShoppingListScreen from '../screens/ShoppingListScreen';
+import ShoppingListDetailScreen from '../screens/ShoppingListDetailScreen'; // Nueva importación
 import UserScreen from '../screens/UserScreen';
 import ShoppingListItemForm from '../components/ShoppingList/ShoppingListForm';
 import EditProfileScreen from '../screens/EditProfileScreen';
@@ -40,6 +41,20 @@ const ShoppingListStack = () => (
       name="AddToList" 
       component={ShoppingListItemForm}
       options={{ title: 'Agregar Producto' }}
+    />
+    <ListStack.Screen 
+      name="ShoppingListDetail" 
+      component={ShoppingListDetailScreen}
+      options={({ route }) => ({ 
+        title: route.params?.listName || 'Detalles de la lista',
+        headerStyle: {
+          backgroundColor: '#fff',
+        },
+        headerTintColor: '#000',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      })}
     />
   </ListStack.Navigator>
 );
@@ -86,7 +101,7 @@ const BuyerTabs = () => (
     <Tab.Screen name="Home" component={HomeScreen} />
     <Tab.Screen 
       name="Products" 
-      component={BuyerProductScreen}  // Cambiado a BuyerProductScreen
+      component={BuyerProductScreen}
       options={{ title: 'Catálogo de Productos' }}
     />
     <Tab.Screen name="Shops" component={ShopScreen} />
