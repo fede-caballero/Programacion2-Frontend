@@ -32,45 +32,46 @@ const LoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     setError('');
     setIsLoading(true);
-  
+
     try {
-      const lowercaseEmail = email.toLowerCase();
-      const response = await login(lowercaseEmail, password);
-      
-      // Validar que la respuesta contenga los datos necesarios
-      if (!response || !response.token) {
-        throw new Error('Respuesta de login inválida');
-      }
+        const lowercaseEmail = email.toLowerCase();
+        const response = await login(lowercaseEmail, password);
+        
+        // Validar que la respuesta contenga el token
+        if (!response || !response.token) {
+            throw new Error('Respuesta de login inválida: token no recibido');
+        }
 
-      // Asegurarse de que todos los datos requeridos existan
-      const userData = {
-        userId: response.userId || '',
-        name: response.name || '',
-        email: response.email || '',
-        role: response.role || '',
-        shop: response.role === 'COMMERCE' && response.shop ? {
-          shopId: response.shop.shopId || '',
-          shopName: response.shop.shopName || '',
-          location: response.shop.location || ''
-        } : null
-      };
+        // Procesar los datos del usuario si el token es válido
+        const userData = {
+            userId: response.userId || '',
+            name: response.name || '',
+            email: response.email || '',
+            role: response.role || '',
+            shop: response.role === 'COMMERCE' && response.shop ? {
+                shopId: response.shop.shopId || '',
+                shopName: response.shop.shopName || '',
+                location: response.shop.location || ''
+            } : null
+        };
 
-      // Solo guardar en AsyncStorage si tenemos un token válido
-      if (typeof response.token === 'string' && response.token.length > 0) {
-        await AsyncStorage.setItem('userData', JSON.stringify(userData));
-        await AsyncStorage.setItem('userToken', response.token);
-        console.log('Login successful');
-        navigation.navigate('Home');
-      } else {
-        throw new Error('Token inválido recibido del servidor');
-      }
+        // Guardar en AsyncStorage
+        if (typeof response.token === 'string' && response.token.length > 0) {
+            await AsyncStorage.setItem('userData', JSON.stringify(userData));
+            await AsyncStorage.setItem('userToken', response.token);
+            console.log('Login successful');
+            navigation.navigate('Home');
+        } else {
+            throw new Error('Token inválido recibido del servidor');
+        }
     } catch (error) {
-      console.error('Error logging in:', error);
-      setError('Error al iniciar sesión. Verifica tus credenciales.');
+        console.error('Error logging in:', error);
+        setError('Error al iniciar sesión. Verifica tus credenciales.');
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
-  };
+};
+
 
   return (
     <View style={styles.container}>

@@ -67,62 +67,58 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await loginUser({ email, password });
-      console.log('Login response:', response);
-  
-      if (!response || !response.token) {
-        throw new Error('No se recibió un token válido del servidor');
-      }
-  
-      const { token, userId, name, email: userEmail, role, shop } = response;
-  
-      // Validar que tengamos todos los datos necesarios
-      if (!token || !userId || !userEmail || !role) {
-        throw new Error('Datos de usuario incompletos en la respuesta');
-      }
-  
-      // Preparar los datos del usuario normalizados
-      const userData = {
-        userId,
-        name: name || '',
-        email: userEmail,
-        role,
-        shop: role === 'COMMERCE' && shop ? {
-          shopId: shop.shopId || '',
-          shopName: shop.shopName || '',
-          location: shop.location || ''
-        } : null
-      };
-  
-      // Guardar datos en AsyncStorage
-      if (typeof token === 'string' && token.length > 0) {
+        const response = await loginUser({ email, password });
+        console.log('Login response:', response);
+
+        if (!response || !response.token) {
+            throw new Error('No se recibió un token válido del servidor');
+        }
+
+        const { token, userId, name, email: userEmail, role, shop } = response;
+
+        // Validar que tengamos todos los datos necesarios
+        if (!token || !userId || !userEmail || !role) {
+            throw new Error('Datos de usuario incompletos en la respuesta');
+        }
+
+        const userData = {
+            userId,
+            name: name || '',
+            email: userEmail,
+            role,
+            shop: role === 'COMMERCE' && shop ? {
+                shopId: shop.shopId || '',
+                shopName: shop.shopName || '',
+                location: shop.location || ''
+            } : null
+        };
+
+        // Guardar datos en AsyncStorage
         await AsyncStorage.setItem('userToken', token);
         await AsyncStorage.setItem('userData', JSON.stringify(userData));
-      } else {
-        throw new Error('Token inválido recibido del servidor');
-      }
-  
-      // Actualizar el estado
-      setIsAuthenticated(true);
-      setUser(userData);
-      setUserRole(role);
-      
-      if (role === 'COMMERCE' && shop) {
-        setShopData({
-          shopId: shop.shopId || '',
-          shopName: shop.shopName || '',
-          location: shop.location || ''
-        });
-      }
-  
-      console.log('Login successful, user:', userData);
-      return { ...userData, token }; // Asegurarse de devolver el token junto con los datos
-  
+
+        // Actualizar el estado
+        setIsAuthenticated(true);
+        setUser(userData);
+        setUserRole(role);
+        
+        if (role === 'COMMERCE' && shop) {
+            setShopData({
+                shopId: shop.shopId || '',
+                shopName: shop.shopName || '',
+                location: shop.location || ''
+            });
+        }
+
+        console.log('Login successful, user:', userData);
+        return { ...userData, token }; // Devolver el token junto con los datos
+
     } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+        console.error('Login error:', error);
+        throw error;
     }
-  };
+};
+
 
   const register = async (userData) => {
     try {

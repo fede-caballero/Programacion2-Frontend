@@ -327,6 +327,36 @@ export const registerUser = async (userData) => {
   }
 };
 
+export const loginUser = async (userData) => {
+  try {
+    console.log('LoginUser - Request data:', {
+      ...userData,
+      password: userData.password ? '[PRESENT]' : '[MISSING]'
+    });
+
+    const response = await api.post('/api/users/login', userData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('LoginUser - Response:', {
+      status: response.status,
+      data: response.data
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('LoginUser - Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    throw error;
+  }
+};
+
+
 
 export const getCurrentUser = async () => {
   try {
