@@ -1,4 +1,3 @@
-// src/components/ShoppingList/ShoppingListList.js
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import ShoppingListItem from './ShoppingListItem';

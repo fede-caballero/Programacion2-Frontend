@@ -6,7 +6,7 @@ import { API_URL } from '../config/config';
 const api = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json;charset=UTF-8',
     'Accept': 'application/json'
   }
 });
@@ -200,35 +200,51 @@ export const createShoppingList = async (listData) => {
       throw new Error('No user ID found');
     }
 
-    const shoppingListData = {
+    // Simplificar los datos enviados
+    const requestData = {
       listName: listData.listName.trim(),
       description: listData.description?.trim() || null
     };
 
-    console.log('Creating shopping list:', {
-      userId,
-      listData: shoppingListData
-    });
-
     const response = await api.post(
       `/api/users/${userId}/shopping-lists`,
-      shoppingListData,
+      requestData
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Error creating shopping list:', error);
+    throw error;
+  }
+};
+
+export const deleteShoppingListByIdAndUser = async (listId) => {
+  try {
+    const userData = await AsyncStorage.getItem('userData');
+    if (!userData) {
+      throw new Error('No user data found');
+    }
+    
+    const { userId } = JSON.parse(userData);
+    if (!userId) {
+      throw new Error('No user ID found');
+    }
+
+    const response = await api.delete(
+      `/api/users/${userId}/shopping-lists/${listId}`,
       {
         headers: {
-          'Content-Type': 'application/json',
           'Accept': 'application/json'
         }
       }
     );
 
-    console.log('Shopping list created:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error creating shopping list:', {
+    console.error('Error deleting shopping list:', {
       message: error.message,
       response: error.response?.data,
-      status: error.response?.status,
-      headers: error.config?.headers
+      status: error.response?.status
     });
     throw error;
   }
