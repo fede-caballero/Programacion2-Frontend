@@ -291,23 +291,42 @@ api.interceptors.response.use(
 
 export const registerUser = async (userData) => {
   try {
-      const response = await api.post('/api/users/register', userData);
-      return response.data;
+    console.log('RegisterUser - Request data:', {
+      ...userData,
+      password: userData.password ? '[PRESENT]' : '[MISSING]'
+    });
+
+    const response = await api.post('/api/users/register', 
+      {
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        role: userData.role,
+        shop: userData.shop
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log('RegisterUser - Response:', {
+      status: response.status,
+      data: response.data
+    });
+
+    return response.data;
   } catch (error) {
-      console.error('Register error:', error.response?.data);
-      throw error;
+    console.error('RegisterUser - Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    throw error;
   }
 };
 
-export const loginUser = async (credentials) => {
-  try {
-      const response = await api.post('/api/users/login', credentials);
-      return response.data;
-  } catch (error) {
-      console.error('Login error:', error.response?.data);
-      throw error;
-  }
-};
 
 export const getCurrentUser = async () => {
   try {

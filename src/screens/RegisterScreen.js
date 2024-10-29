@@ -36,37 +36,40 @@ const RegisterScreen = ({ navigation }) => {
   const handleRegister = async () => {
     setError('');
     setIsLoading(true);
-
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      setIsLoading(false);
-      return;
-    }
-
-    if (role === 'COMMERCE' && (!shopName || !shopLocation)) {
-      setError('Por favor, complete la información de la tienda');
-      setIsLoading(false);
-      return;
-    }
-
+  
     try {
-      const lowercaseEmail = email.toLowerCase();
-      const userData = { 
-        name, 
-        email: lowercaseEmail, 
-        password, 
-        role,
-        shop: role === 'COMMERCE' ? { shopName, location: shopLocation } : null
+      if (!password || password.trim() === '') {
+        setError('La contraseña es requerida');
+        setIsLoading(false);
+        return;
+      }
+  
+      const userData = {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password: password,
+        role: role,
+        shop: role === 'COMMERCE' ? {
+          shopName: shopName.trim(),
+          location: shopLocation.trim()
+        } : null
       };
-      
+  
+      // Log para debug (sin mostrar la contraseña)
+      console.log('Registering with data:', {
+        ...userData,
+        password: '[PRESENT]'
+      });
+  
       const response = await register(userData);
-      console.log('Registration successful:', response);
+      console.log('Registration successful');
       
       alert('Registro exitoso');
       navigation.navigate('Login');
     } catch (error) {
-      console.error('Error registering user:', error);
-      setError(error.message || 'Error al registrar el usuario. Por favor, intenta de nuevo.');
+      const errorMessage = error.response?.data?.error || 'Error al registrar el usuario';
+      console.error('Registration error:', errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
